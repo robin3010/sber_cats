@@ -4,17 +4,23 @@ const BASE_URL = `https://cats.petiteweb.dev/api/single/${USER}`;
 const D_ATTR = {
   BOX: 'box',
   ACTION: 'action',
-  CAT_CARD: 'cat-card',
+  CARD: 'cat-card',
+  MODAL: 'modal',
 };
 const ACTIONS = {
   MORE: 'more',
   EDIT: 'edit',
   DELETE: 'delete',
 };
+const MODAL = {
+  ADD: 'add-form',
+  MORE: 'more-info',
+  EDIT: 'edit-form',
+};
 
 const $box = document.querySelector(`[data-${D_ATTR.BOX}]`);
 
-const makeCatCard = (cat) => {
+const catCardHTML = (cat) => {
   let fav = 'regular';
   if (cat.favorite) {
     fav = 'solid';
@@ -27,7 +33,7 @@ const makeCatCard = (cat) => {
     imgPHClass = '';
   }
 
-  return `<div data-${D_ATTR.CAT_CARD} data-id="${cat.id}" class="card">
+  return `<div data-${D_ATTR.CARD} data-id="${cat.id}" class="card">
     <div class="card__img${imgPHClass}">
       <img src="${img}" alt="${cat.name}">
     </div>
@@ -50,17 +56,54 @@ const makeCatCard = (cat) => {
 fetch(`${BASE_URL}/show/`)
   .then((response) => response.json())
   .then((allCats) => {
-    $box.insertAdjacentHTML('afterbegin', allCats.map((el) => makeCatCard(el)).join(''));
+    $box.insertAdjacentHTML('afterbegin', allCats.map((el) => catCardHTML(el)).join(''));
   });
 
 $box.addEventListener('click', (e) => {
   if (e.target.dataset[D_ATTR.ACTION] === ACTIONS.DELETE) {
-    const $catCard = e.target.closest(`[data-${D_ATTR.CAT_CARD}]`);
+    const $catCard = e.target.closest(`[data-${D_ATTR.CARD}]`);
     fetch(`${BASE_URL}/delete/${$catCard.dataset.id}`, { method: 'DELETE' })
       .then((response) => {
         if (response.status === 200) {
           $catCard.remove();
         }
       });
+  }
+});
+
+const cutCatCardBts = (catCard) => {
+  const re = /\s*<div class=.card__buttons.*$/gs;
+  return catCard.outerHTML.replace(re, '');
+};
+
+const catModalCardHTML = (cat) => {
+  const point = '<i class="fa-solid fa-paw"></i>';
+  let rate = '';
+  if (cat.rate > 0) {
+    rate += point.repeat(cat.rate);
+  }
+
+  return `
+  <div class="card__age">
+    Age: ${cat.age}
+  </div>
+  <div class="card__rate">
+    Rating: ${rate}
+  </div>
+</div>`;
+};
+
+const $modal = document.querySelector(`[data-${D_ATTR.MODAL}="${MODAL.MORE}"]`);
+
+$box.addEventListener('click', (e) => {
+  if (e.target.dataset[D_ATTR.ACTION] === ACTIONS.MORE) {
+    const $catCard = e.target.closest(`[data-${D_ATTR.CARD}]`);
+    const cutCatCardHTML = cutCatCardBts($catCard);
+
+    (async function catInfo() {
+      const getCatCardByID = await fetch(`${BASE_URL}/show/${$catCard.dataset.id}`);
+      const catJSON = await getCatCardByID.json();
+      return $modal.insertAdjacentHTML('afterbegin', await cutCatCardHTML + catModalCardHTML(catJSON));
+    }());
   }
 });
