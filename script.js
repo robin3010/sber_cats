@@ -18,19 +18,19 @@ for (const k in DATASET) {
 }
 
 const ACTIONS = {
-  MORE: 'more',
+  DETAIL: 'detail',
   EDIT: 'edit',
   DELETE: 'delete',
 };
 const MODAL = {
   ADD: 'add-form',
-  MORE: 'more-info',
+  DETAIL: 'detail-info',
   EDIT: 'edit-form',
 };
 
 const $container = document.querySelector(`[${D_ATTR.CONTAINER}]`);
 const $modalContainer = document.querySelector(`[${D_ATTR.MODAL_CONTAINER}]`);
-const $modalMore = document.querySelector(`[${D_ATTR.MODAL}="${MODAL.MORE}"]`);
+const $modalDetail = document.querySelector(`[${D_ATTR.MODAL}="${MODAL.DETAIL}"]`);
 
 const catCardHTML = (cat) => {
   let fav = 'regular';
@@ -59,7 +59,7 @@ const catCardHTML = (cat) => {
         <p>${cat.description}</p>
       </div>
       <div class="card__buttons">
-        <button ${D_ATTR.ACTION}="${ACTIONS.MORE}">More...</button>
+        <button ${D_ATTR.ACTION}="${ACTIONS.DETAIL}">Detail...</button>
         <button ${D_ATTR.ACTION}="${ACTIONS.EDIT}">Edit</button>
         <button ${D_ATTR.ACTION}="${ACTIONS.DELETE}">Delete</button>
       </div>
@@ -92,6 +92,7 @@ const catModalCardHTML = (cat) => {
   `;
 };
 
+// get all cats
 fetch(`${BASE_URL}/show/`)
   .then((response) => response.json())
   .then((allCats) => {
@@ -102,43 +103,53 @@ const toggleModalContainer = () => $modalContainer.classList.toggle('hidden');
 
 const closeModal = (e) => {
   if (e.target === $modalContainer) {
-    $modalMore.replaceChildren();
+    $modalDetail.replaceChildren();
     toggleModalContainer();
     $modalContainer.removeEventListener('click', closeModal);
   }
 };
 
-$container.addEventListener('click', (e) => {
+function deleteHandler(card, id) {
+  fetch(`${BASE_URL}/delete/${id}`, { method: 'DELETE' })
+    .then((response) => {
+      if (response.status === 200) {
+        return card.remove();
+      }
+      throw new Error(`Не удалось удалить кота с id = ${id}`);
+    });
+}
+
+function detailHandler(card, id) {
+  const cutCatCardHTML = cutCatCardBts(card);
+
+  (async function catInfo() {
+    const getCatCardByID = await fetch(`${BASE_URL}/show/${id}`);
+    const catJSON = await getCatCardByID.json();
+    return $modalDetail.insertAdjacentHTML('afterbegin', await cutCatCardHTML + catModalCardHTML(catJSON));
+  }());
+  toggleModalContainer();
+
+  $modalContainer.addEventListener('click', closeModal);
+}
+
+function buttonsHandler(e) {
   if (e.target !== $container) {
     const $catCard = e.target.closest(`[${D_ATTR.CARD}]`);
     const catId = $catCard.dataset.id;
 
     switch (e.target.dataset[DATASET.ACTION]) {
       case ACTIONS.DELETE:
-        fetch(`${BASE_URL}/delete/${catId}`, { method: 'DELETE' })
-          .then((response) => {
-            if (response.status === 200) {
-              return $catCard.remove();
-            }
-            throw new Error(`Не удалось удалить кота с id = ${catId}`);
-          });
+        deleteHandler($catCard, catId);
         break;
 
-      case ACTIONS.MORE:
-        const cutCatCardHTML = cutCatCardBts($catCard);
-
-        (async function catInfo() {
-          const getCatCardByID = await fetch(`${BASE_URL}/show/${catId}`);
-          const catJSON = await getCatCardByID.json();
-          return $modalMore.insertAdjacentHTML('afterbegin', await cutCatCardHTML + catModalCardHTML(catJSON));
-        }());
-        toggleModalContainer();
-
-        $modalContainer.addEventListener('click', closeModal);
+      case ACTIONS.DETAIL:
+        detailHandler($catCard, catId);
         break;
 
       default:
         break;
     }
   }
-});
+}
+
+$container.addEventListener('click', buttonsHandler);
