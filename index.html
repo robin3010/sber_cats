@@ -14,17 +14,67 @@
 </head>
 
 <body>
-  <h1>Cats Project</h1>
-  <div class="container">
-    <div data-container class="cards">
-
+  <header>
+    <h1>Cats Project</h1>
     </div>
+  </header>
+  <div class="container">
+    <div data-container class="cards"></div>
+    <button class="button__add"><i data-action="add" class="fa-solid fa-plus"></i></button>
   </div>
-  <div data-modalContainer class="modal__container hidden">
-    <div data-modal="add-form" class="modal__add-form"></div>
-    <div data-modal="detail-info" class="modal__detail-info"></div>
-    <div data-modal="edit-form" class="modal__edit-form"></div>
+  <div data-modalContainer class="modal__container">
+    <div data-modal="form-add" class="modal__form-add hidden"></div>
+    <div data-modal="form-edit" class="modal__form-edit hidden"></div>
+    <div data-modal="detail-info" class="modal__detail-info hidden"></div>
   </div>
+  <template data-form-template>
+    <div class="modal__form">
+      <h2>Add new Cat</h2>
+      <form name="add">
+        <input
+          name="id"
+          type="number"
+          placeholder="ID"
+          required>
+        <input
+          name="name"
+          type="text"
+          placeholder="Name"
+          pattern=".{3,30}"
+          required>
+        <input
+          name="age"
+          type="number"
+          placeholder="Age"
+          max="99">
+        <textarea
+          name="description"
+          rows="4" cols="21"
+          placeholder="Type some cat description here"
+          style="resize: none"></textarea>
+        <input
+          name="image"
+          type="url"
+          placeholder="Image URL">
+        <input
+          name="rate"
+          type="range"
+          min="1" max="10"
+          step="1" value="6">
+        <div>
+          <input
+            name="favorite"
+            type="checkbox"
+            id="favorite">
+          <label for="favorite">Favorite</label>
+        </div>
+        <input
+          type="submit"
+          name="submit"
+          value="Add">
+      </form>
+    </div>
+  </template>
 </body>
 
 </html>
