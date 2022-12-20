@@ -2,6 +2,7 @@ body {
   margin: 0;
   /* padding-bottom: 160px; */
   font-family: sans-serif;
+  cursor: default;
   background: url(./img/bg.png);
   color: #261413;
   overflow-y: scroll;
@@ -135,6 +136,7 @@ header {
   border-radius: 8px;
   border-width: 1px;
   color: #261413;
+  cursor: pointer;
 }
 
 .card__buttons button:first-child {

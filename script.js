@@ -6,7 +6,7 @@ const D_ATTR = {
   ACTION: 'data-action',
   CARD: 'data-cat-card',
   MODAL: 'data-modal',
-  MODAL_CONTAINER: 'data-modalcontainer',
+  // MODAL_CONTAINER: 'data-modalcontainer',
 };
 
 // копия D_ATTR без 'data-' у ключей, для обращения через dataset
@@ -16,6 +16,8 @@ for (const k in DATASET) {
     DATASET[k] = DATASET[k].substring(5);
   }
 }
+
+const LS_NEW_CAT_FORM = 'LS_NEW_CAT_FORM';
 
 const ACTIONS = {
   ADD: 'add',
@@ -136,6 +138,7 @@ function SubmitNewCatHandler(submitEvent) {
     });
     try {
       if (addNewCat.status === 200) {
+        localStorage.removeItem(LS_NEW_CAT_FORM);
         return $container.insertAdjacentHTML('afterbegin', catCardHTML(formattedFormData));
       }
       throw Error('Ошибка при добавлении кота');
@@ -171,6 +174,25 @@ const addHandler = () => {
 
   // eslint-disable-next-line no-use-before-define
   flushModal($modalAdd);
+
+  // работа с localStorage
+  const $addForm = document.forms.add;
+  const getStoredData = localStorage.getItem(LS_NEW_CAT_FORM);
+  const objFromStoredData = getStoredData && JSON.parse(getStoredData);
+
+  if (objFromStoredData) {
+    Object.keys(objFromStoredData).forEach((key) => {
+      if (objFromStoredData.favorite) {
+        $addForm.favorite.checked = true;
+      }
+      $addForm[key].value = objFromStoredData[key];
+    });
+  }
+
+  $addForm.addEventListener('change', () => {
+    const getFormData = Object.fromEntries(new FormData($addForm).entries());
+    localStorage.setItem(LS_NEW_CAT_FORM, JSON.stringify(getFormData));
+  });
 };
 
 // обработка кликов на кнопки
