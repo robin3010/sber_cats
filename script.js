@@ -106,64 +106,70 @@ const formatFormData = (data) => ({
 });
 
 // получение и отображение карточек всех котов
-fetch(`${BASE_URL}/show/`)
-  .then((response) => response.json())
-  .then((allCats) => {
-    $container.insertAdjacentHTML('afterbegin', allCats.map((el) => catCardHTML(el)).join(''));
-  });
+(async function showCats() {
+  const getCats = await fetch(`${BASE_URL}/show/`);
+  const catData = await getCats.json();
+  return $container.insertAdjacentHTML('afterbegin', await catData.map((el) => catCardHTML(el)).join(''));
+}());
 
 // удаление кота
-function deleteHandler(card, id) {
-  fetch(`${BASE_URL}/delete/${id}`, { method: 'DELETE' })
-    .then((response) => {
-      if (response.status === 200) {
-        return card.remove();
-      }
-      throw Error(`Не удалось удалить кота с id = ${id}`);
-    }).catch(alert);
+async function deleteHandler(card, id) {
+  const catRm = await fetch(`${BASE_URL}/delete/${id}`, { method: 'DELETE' });
+  try {
+    if (catRm.status === 200) {
+      return card.remove();
+    }
+    throw Error(`Не удалось удалить кота с id = ${id}`);
+  } catch (err) {
+    alert(err);
+  }
 }
 
 // добавление кота (отправка формы на сервер)
-function SubmitNewCatHandler(submitEvent) {
+async function SubmitNewCatHandler(submitEvent) {
   const getFormData = Object.fromEntries(new FormData(submitEvent.target).entries());
   const formattedFormData = formatFormData(getFormData);
 
-  (async function addCat() {
-    const addNewCat = await fetch(`${BASE_URL}/add/`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(formattedFormData),
-    });
-    try {
-      if (addNewCat.status === 200) {
-        localStorage.removeItem(LS_NEW_CAT_FORM);
-        return $container.insertAdjacentHTML('afterbegin', catCardHTML(formattedFormData));
-      }
-      throw Error('Ошибка при добавлении кота');
-    } catch (err) {
-      alert(err);
+  const addNewCat = await fetch(`${BASE_URL}/add/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(formattedFormData),
+  });
+  try {
+    if (addNewCat.status === 200) {
+      localStorage.removeItem(LS_NEW_CAT_FORM);
+      return $container.insertAdjacentHTML('afterbegin', catCardHTML(formattedFormData));
     }
-  }());
+    throw Error('Ошибка при добавлении кота');
+  } catch (err) {
+    alert(err);
+  }
 }
 
 // вкл/выкл отображения контейнера модального окна
 const toggleModal = (modal) => modal.classList.toggle('hidden');
 
 // показать подробную карточку кота в модальном окне
-function detailHandler(card, id) {
+async function detailHandler(card, id) {
   const cutCatCardHTML = cutCatCardBts(card);
 
-  (async function catInfo() {
-    const getCatDataByID = await fetch(`${BASE_URL}/show/${id}`);
-    const catJSON = await getCatDataByID.json();
-    return $modalDetail.insertAdjacentHTML('afterbegin', await cutCatCardHTML + catModalCardHTML(catJSON));
-  }());
-  toggleModal($modalDetail);
+  const getCatDataByID = await fetch(`${BASE_URL}/show/${id}`);
+  try {
+    if (getCatDataByID.status === 200) {
+      const catData = await getCatDataByID.json();
+      $modalDetail.insertAdjacentHTML('afterbegin', await cutCatCardHTML + catModalCardHTML(catData));
+      toggleModal($modalDetail);
 
-  // eslint-disable-next-line no-use-before-define
-  flushModal($modalDetail);
+      // eslint-disable-next-line no-use-before-define
+      flushModal($modalDetail);
+      return;
+    }
+    throw Error(`Ошибка при отображении подробной карточки кота с id = ${id}`);
+  } catch (err) {
+    alert(err);
+  }
 }
 
 // показать форму добавления кота
