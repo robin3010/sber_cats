@@ -14,7 +14,7 @@ module.exports = {
     'no-console': 0,
     'no-alert': 0,
     'no-tabs': 0,
-    'no-restricted-syntax': 0,
     'consistent-return': 0,
+    'default-case': 0,
   },
 };
