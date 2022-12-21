@@ -221,7 +221,6 @@ function SubmitHandler(submitEvent, id) {
   nameInput.disabled = false;
   const getFormData = Object.fromEntries(new FormData(submitEvent.target).entries());
   const formattedFormData = formatFormData(getFormData);
-  console.log('1', formattedFormData);
 
   async function addCat() {
     const addRequest = await fetch(`${BASE_URL}/add/`, {
