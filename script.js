@@ -6,18 +6,16 @@ const D_ATTR = {
   ACTION: 'data-action',
   CARD: 'data-cat-card',
   MODAL: 'data-modal',
-  // MODAL_CONTAINER: 'data-modalcontainer',
+  ID: 'data-id',
 };
 
 // копия D_ATTR без 'data-' у ключей, для обращения через dataset
 const DATASET = structuredClone(D_ATTR);
-for (const k in DATASET) {
-  if (DATASET) {
-    DATASET[k] = DATASET[k].substring(5);
-  }
-}
+Object.keys(DATASET).forEach((key) => {
+  DATASET[key] = DATASET[key].substring(5);
+});
 
-const LS_NEW_CAT_FORM = 'LS_NEW_CAT_FORM';
+const LS_NEW_CAT = 'LS_NEW_CAT';
 
 const ACTIONS = {
   ADD: 'add',
@@ -26,15 +24,13 @@ const ACTIONS = {
   DELETE: 'delete',
 };
 const MODAL = {
-  ADD: 'form-add',
-  EDIT: 'form-edit',
+  FORM: 'form',
   DETAIL: 'detail-info',
 };
 
 const $container = document.querySelector(`[${D_ATTR.CONTAINER}]`);
-// const $modalContainer = document.querySelector(`[${D_ATTR.MODAL_CONTAINER}]`);
 const $modalDetail = document.querySelector(`[${D_ATTR.MODAL}="${MODAL.DETAIL}"]`);
-const $modalAdd = document.querySelector(`[${D_ATTR.MODAL}="${MODAL.ADD}"]`);
+const $modalForm = document.querySelector(`[${D_ATTR.MODAL}="${MODAL.FORM}"]`);
 const $formTemplate = document.querySelector('[data-form-template]');
 
 const catCardHTML = (cat) => {
@@ -51,7 +47,7 @@ const catCardHTML = (cat) => {
   }
 
   return `
-  <div ${D_ATTR.CARD} data-id="${cat.id}" class="card">
+  <div ${D_ATTR.CARD} ${D_ATTR.ID}="${cat.id}" class="card">
     <div class="card__img${imgPHClass}">
       <img src="${img}" alt="${cat.name}">
     </div>
@@ -97,6 +93,7 @@ const catModalCardHTML = (cat) => {
   `;
 };
 
+// приведение данных формы к принимаемому бэкэндом формату
 const formatFormData = (data) => ({
   ...data,
   id: +data.id,
@@ -114,35 +111,12 @@ const formatFormData = (data) => ({
 
 // удаление кота
 async function deleteHandler(card, id) {
-  const catRm = await fetch(`${BASE_URL}/delete/${id}`, { method: 'DELETE' });
+  const removeCat = await fetch(`${BASE_URL}/delete/${id}`, { method: 'DELETE' });
   try {
-    if (catRm.status === 200) {
+    if (removeCat.status === 200) {
       return card.remove();
     }
     throw Error(`Не удалось удалить кота с id = ${id}`);
-  } catch (err) {
-    alert(err);
-  }
-}
-
-// добавление кота (отправка формы на сервер)
-async function SubmitNewCatHandler(submitEvent) {
-  const getFormData = Object.fromEntries(new FormData(submitEvent.target).entries());
-  const formattedFormData = formatFormData(getFormData);
-
-  const addNewCat = await fetch(`${BASE_URL}/add/`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(formattedFormData),
-  });
-  try {
-    if (addNewCat.status === 200) {
-      localStorage.removeItem(LS_NEW_CAT_FORM);
-      return $container.insertAdjacentHTML('afterbegin', catCardHTML(formattedFormData));
-    }
-    throw Error('Ошибка при добавлении кота');
   } catch (err) {
     alert(err);
   }
@@ -166,46 +140,148 @@ async function detailHandler(card, id) {
       flushModal($modalDetail);
       return;
     }
-    throw Error(`Ошибка при отображении подробной карточки кота с id = ${id}`);
+    throw Error(`Не удалось отобразить подробную информацию о коте с id = ${id}`);
   } catch (err) {
     alert(err);
   }
 }
 
-// показать форму добавления кота
-const addHandler = () => {
-  const addNewCatForm = $formTemplate.content.cloneNode(true);
-  $modalAdd.appendChild(addNewCatForm);
-  toggleModal($modalAdd);
-
-  // eslint-disable-next-line no-use-before-define
-  flushModal($modalAdd);
-
-  // работа с localStorage
-  const $addForm = document.forms.add;
-  const getStoredData = localStorage.getItem(LS_NEW_CAT_FORM);
-  const objFromStoredData = getStoredData && JSON.parse(getStoredData);
-
-  if (objFromStoredData) {
-    Object.keys(objFromStoredData).forEach((key) => {
-      if (objFromStoredData.favorite) {
-        $addForm.favorite.checked = true;
+// показать форму добавления / редактирования кота
+const addEditHandler = (e, id) => {
+  const addEditCatForm = $formTemplate.content.cloneNode(true);
+  if (e.target.dataset[DATASET.ACTION] === ACTIONS.ADD) {
+    addEditCatForm.querySelectorAll('label').forEach((tag) => {
+      if (tag.htmlFor !== 'favorite' && tag.htmlFor !== 'rate') {
+        tag.remove();
       }
-      $addForm[key].value = objFromStoredData[key];
+    });
+  }
+  $modalForm.appendChild(addEditCatForm);
+
+  const $addEditForm = document.forms.addEdit;
+
+  // получение данных для предзаполнения в форму добавления
+  const fillForm = (data) => {
+    Object.keys(data).forEach((key) => {
+      if (data.favorite) {
+        $addEditForm.favorite.checked = true;
+      }
+      $addEditForm[key].value = data[key];
+    });
+  };
+
+  // получение данных для предзаполнения в форму редактирования
+  async function getCatData() {
+    $modalForm.querySelector('h2').innerHTML = 'Edit Cat';
+    $addEditForm.id.disabled = true;
+    $addEditForm.name.disabled = true;
+    $addEditForm.submit.id = ACTIONS.EDIT;
+    const getCatDataByID = await fetch(`${BASE_URL}/show/${id}`);
+    try {
+      if (getCatDataByID.status === 200) {
+        const catData = await getCatDataByID.json();
+        return fillForm(catData);
+      }
+      throw Error(`Не удалось получить данные о коте с id = ${id}`);
+    } catch (err) {
+      alert(err);
+    }
+  }
+
+  // условие какими данными предзаполнять (для добавления - из LS или редактирования - с бэкэнда)
+  if (e.target.dataset[DATASET.ACTION] === ACTIONS.EDIT) {
+    getCatData();
+  } else {
+  // логика работы с localStorage
+    const getStoredData = localStorage.getItem(LS_NEW_CAT);
+    const objFromStoredData = getStoredData && JSON.parse(getStoredData);
+
+    if (objFromStoredData) {
+      fillForm(objFromStoredData);
+    }
+
+    $addEditForm.addEventListener('change', () => {
+      const getFormData = Object.fromEntries(new FormData($addEditForm).entries());
+      localStorage.setItem(LS_NEW_CAT, JSON.stringify(getFormData));
     });
   }
 
-  $addForm.addEventListener('change', () => {
-    const getFormData = Object.fromEntries(new FormData($addForm).entries());
-    localStorage.setItem(LS_NEW_CAT_FORM, JSON.stringify(getFormData));
-  });
+  toggleModal($modalForm);
+
+  // eslint-disable-next-line no-use-before-define
+  flushModal($modalForm, id);
 };
+
+// добавление / редактирование кота (передача формы на бэкэнд)
+function SubmitHandler(submitEvent, id) {
+  // const $addEditForm = document.forms.addEdit;
+  const idInput = submitEvent.target.id;
+  const nameInput = submitEvent.target.name;
+  idInput.disabled = false;
+  nameInput.disabled = false;
+  const getFormData = Object.fromEntries(new FormData(submitEvent.target).entries());
+  const formattedFormData = formatFormData(getFormData);
+  console.log('1', formattedFormData);
+
+  async function addCat() {
+    const addRequest = await fetch(`${BASE_URL}/add/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(formattedFormData),
+    });
+    try {
+      if (addRequest.status === 200) {
+        localStorage.removeItem(LS_NEW_CAT);
+        return $container.insertAdjacentHTML('afterbegin', catCardHTML(formattedFormData));
+      }
+      throw Error('Не удалось добавить кота');
+    } catch (err) {
+      alert(err);
+    }
+  }
+
+  async function editCat(catId) {
+    // копия новых данных кота для отображения карточки
+    const copyFormData = { ...formattedFormData };
+    Object.freeze(copyFormData);
+    // удаление данных, которые не должны отправляться на бэкэнд
+    delete formattedFormData.id;
+    delete formattedFormData.name;
+    Object.freeze(formattedFormData);
+    const editRequest = await fetch(`${BASE_URL}/update/${catId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(formattedFormData),
+    });
+    try {
+      if (editRequest.status === 200) {
+        const $catCard = document.querySelector(`[data-id='${id}']`);
+        const $place = $catCard.nextElementSibling;
+        $place.insertAdjacentHTML('beforebegin', catCardHTML(copyFormData));
+        return $catCard.remove();
+      }
+      throw Error('Не удалось добавить кота');
+    } catch (err) {
+      alert(err);
+    }
+  }
+
+  if (submitEvent.target.submit.id === ACTIONS.ADD) {
+    addCat();
+  } else if (submitEvent.target.submit.id === ACTIONS.EDIT) {
+    editCat(id);
+  }
+}
 
 // обработка кликов на кнопки
 function buttonsHandler(e) {
   if (e.target.dataset[DATASET.ACTION]) {
     const $catCard = !e.target.dataset.action.endsWith('add') ? e.target.closest(`[${D_ATTR.CARD}]`) : '';
-    const catId = $catCard ? $catCard.dataset.id : '';
+    const catId = $catCard ? $catCard.dataset[DATASET.ID] : '';
 
     switch (e.target.dataset[DATASET.ACTION]) {
       case ACTIONS.DELETE:
@@ -213,16 +289,15 @@ function buttonsHandler(e) {
         break;
 
       case ACTIONS.DETAIL:
-        document.removeEventListener('click', buttonsHandler);
         detailHandler($catCard, catId);
         break;
 
       case ACTIONS.ADD:
-        document.removeEventListener('click', buttonsHandler);
-        addHandler();
+        addEditHandler(e);
         break;
 
-      default:
+      case ACTIONS.EDIT:
+        addEditHandler(e, catId);
         break;
     }
   }
@@ -231,7 +306,7 @@ function buttonsHandler(e) {
 document.addEventListener('click', buttonsHandler);
 
 // сценарии закрытия модальных окон
-function flushModal(modal) {
+function flushModal(modal, id) {
   // по нажатию Escape
   function closeByEsc(e) {
     if (e.key === 'Escape') {
@@ -254,9 +329,9 @@ function flushModal(modal) {
 
   // при отправке формы
   function closeBySubmit(e) {
-    if (e.target === document.forms['add' || 'edit']) {
+    if (e.target === document.forms.addEdit) {
       e.preventDefault();
-      SubmitNewCatHandler(e);
+      SubmitHandler(e, id);
       modal.replaceChildren();
       toggleModal(modal);
       // eslint-disable-next-line no-use-before-define

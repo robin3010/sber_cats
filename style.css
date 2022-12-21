@@ -177,8 +177,7 @@ header {
 }
 
 /* MODAL STYLES */
-.modal__form-add,
-.modal__form-edit,
+.modal__form-add-edit,
 .modal__detail-info {
   display: flex;
   position: fixed;
@@ -242,7 +241,7 @@ header {
   align-items: end;
 }
 
-/* Add Modal */
+/* Add/Edit Modal */
 .modal__form {
   display: flex;
   justify-content: center;
@@ -257,7 +256,7 @@ header {
 .modal__form form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 8px;
   width: 424px;
 }
 
@@ -282,5 +281,5 @@ textarea:focus {
 /* Modal toggler */
 .hidden {
   display: none;
-  position: inherit;
+  /* position: inherit; */
 }
