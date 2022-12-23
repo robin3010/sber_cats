@@ -10,6 +10,9 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css"
     integrity="sha512-MV7K8+y+gLIBoVD59lQIYicR65iaqukzvf/nwasF0nqhPay5w/9lJmVM2hMDcnK1OnMGCdVK+iQrJ7lzPJQd1w=="
     crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"
+    integrity="sha512-c42qTSw/wPZ3/5LBzD+Bw5f7bSF2oxou6wEb+I/lqeaKV5FDIfMvvRp772y4jcJLKuGUOpbJMdg/BTl50fJYAw=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="stylesheet" href="style.css">
 </head>
 
@@ -28,7 +31,12 @@
   </div>
   <template data-form-template>
     <div class="modal__form">
-      <h2>Add new Cat</h2>
+      <button class="form__button-close">
+        <i data-action="close" class="fa-solid fa-xmark"></i>
+      </button>
+      <header>
+        <h2>Add new Cat</h2>
+      </header>
       <form name="addEdit">
         <label for="id">ID</label>
         <input
@@ -65,25 +73,26 @@
           id="image"
           type="url"
           placeholder="Image URL">
-        <label for="rate">Rating</label>
         <input
           name="rate"
           id="rate"
           type="range"
           min="1" max="10"
           step="1" value="6">
-        <div>
+        <label for="rate">Rating: <span id="rateValue"></span></label>
+        <div class="modal__form-favorite">
           <input
             name="favorite"
             id="favorite"
             type="checkbox">
           <label for="favorite">Favorite</label>
         </div>
-        <input
+        <button class="form__button-submit"
           type="submit"
           name="submit"
-          value="Okay"
           id="add">
+          <i class="fa-solid fa-check"></i>
+        </button>
       </form>
     </div>
   </template>

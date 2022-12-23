@@ -1,5 +1,7 @@
 const USER = 'robin3010';
 const BASE_URL = `https://cats.petiteweb.dev/api/single/${USER}`;
+const ANIMATION_NAME = 'fadeOutDown';
+const ANIMATION_DURATION = '.4s';
 
 const D_ATTR = {
   CONTAINER: 'data-container',
@@ -7,6 +9,7 @@ const D_ATTR = {
   CARD: 'data-cat-card',
   MODAL: 'data-modal',
   ID: 'data-id',
+  BUTTONS: 'data-card-buttons',
 };
 
 // копия D_ATTR без 'data-' у ключей, для обращения через dataset
@@ -14,8 +17,6 @@ const DATASET = structuredClone(D_ATTR);
 Object.keys(DATASET).forEach((key) => {
   DATASET[key] = DATASET[key].substring(5);
 });
-
-const LS_NEW_CAT = 'LS_NEW_CAT';
 
 const ACTIONS = {
   ADD: 'add',
@@ -27,6 +28,8 @@ const MODAL = {
   FORM: 'form',
   DETAIL: 'detail-info',
 };
+
+const LS_NEW_CAT = 'LS_NEW_CAT';
 
 const $container = document.querySelector(`[${D_ATTR.CONTAINER}]`);
 const $modalDetail = document.querySelector(`[${D_ATTR.MODAL}="${MODAL.DETAIL}"]`);
@@ -53,25 +56,28 @@ const catCardHTML = (cat) => {
     </div>
     <div class="card__content">
       <div class="card__title">
-        <h2>${cat.name.toUpperCase()}</h2>
+        <header>
+          <h2>${cat.name.toUpperCase()}</h2>
+        </header>
         <button class="card-favorite"><i class="fa-${fav} fa-heart"></i></button>
       </div>
       <div class="card__description">
         <p>${cat.description}</p>
       </div>
-      <div class="card__buttons">
-        <button ${D_ATTR.ACTION}="${ACTIONS.DETAIL}">Detail...</button>
-        <button ${D_ATTR.ACTION}="${ACTIONS.EDIT}">Edit</button>
-        <button ${D_ATTR.ACTION}="${ACTIONS.DELETE}">Delete</button>
+      <div data-card-buttons class="card__buttons">
+        <button class="card__button-detail">
+          <i ${D_ATTR.ACTION}="${ACTIONS.DETAIL}" class="fa-solid fa-eye"></i>
+        </button>
+        <button class="card__button-edit">
+          <i ${D_ATTR.ACTION}="${ACTIONS.EDIT}" class="fa-solid fa-pen"></i>
+        </button>
+        <button class="card__button-delete">
+          <i ${D_ATTR.ACTION}="${ACTIONS.DELETE}" class="fa-solid fa-trash"></i>
+        </button>
       </div>
     </div>
   </div>
     `;
-};
-
-const cutCatCardBts = (catCard) => {
-  const re = /\s*<div class=.card__buttons.*$/gs;
-  return catCard.outerHTML.replace(re, '');
 };
 
 const catModalCardHTML = (cat) => {
@@ -88,8 +94,9 @@ const catModalCardHTML = (cat) => {
     <div class="card__rate">
       Rating: ${rate}
     </div>
-  </div>
-</div>
+    <button class="card__button-close">
+      <i data-action="close" class="fa-solid fa-xmark"></i>
+    </button>
   `;
 };
 
@@ -102,11 +109,17 @@ const formatFormData = (data) => ({
   favorite: !!data.favorite,
 });
 
+// вкл/выкл отображения контейнера модального окна
+const toggleModal = (modal) => {
+  modal.classList.toggle('hidden');
+  document.body.classList.toggle('scrollOff');
+};
+
 // получение и отображение карточек всех котов
 (async function showCats() {
   const getCats = await fetch(`${BASE_URL}/show/`);
   const catData = await getCats.json();
-  return $container.insertAdjacentHTML('afterbegin', await catData.map((el) => catCardHTML(el)).join(''));
+  return $container.insertAdjacentHTML('afterbegin', catData.map((el) => catCardHTML(el)).join(''));
 }());
 
 // удаление кота
@@ -114,6 +127,10 @@ async function deleteHandler(card, id) {
   const removeCat = await fetch(`${BASE_URL}/delete/${id}`, { method: 'DELETE' });
   try {
     if (removeCat.status === 200) {
+      if (card.closest(`[${D_ATTR.MODAL}]`)) {
+        $container.querySelector(`[${D_ATTR.ID}="${card.dataset[DATASET.ID]}"]`).remove();
+        return toggleModal($modalDetail);
+      }
       return card.remove();
     }
     throw Error(`Не удалось удалить кота с id = ${id}`);
@@ -122,20 +139,39 @@ async function deleteHandler(card, id) {
   }
 }
 
-// вкл/выкл отображения контейнера модального окна
-const toggleModal = (modal) => modal.classList.toggle('hidden');
+const setAnimation = (elem, animation, duration) => new Promise((resolve) => {
+  const $animModal = elem;
+  $animModal.style.animationName = animation;
+  if (duration) {
+    $animModal.style.animationDuration = duration;
+  }
+
+  function handleAnimEnd(e) {
+    e.stopPropagation();
+    resolve();
+  }
+
+  elem.addEventListener('animationend', handleAnimEnd, { once: true });
+});
 
 // показать подробную карточку кота в модальном окне
 async function detailHandler(card, id) {
-  const cutCatCardHTML = cutCatCardBts(card);
-
   const getCatDataByID = await fetch(`${BASE_URL}/show/${id}`);
   try {
     if (getCatDataByID.status === 200) {
       const catData = await getCatDataByID.json();
-      $modalDetail.insertAdjacentHTML('afterbegin', await cutCatCardHTML + catModalCardHTML(catData));
-      toggleModal($modalDetail);
+      $modalDetail.insertAdjacentHTML('beforeend', catCardHTML(catData));
+      const $catModalCard = $modalDetail.firstElementChild;
 
+      // удаление лишней кнопки
+      $catModalCard.querySelector(`[${D_ATTR.ACTION}="${ACTIONS.DETAIL}"]`).parentElement.remove();
+      $catModalCard.querySelector(`[${D_ATTR.BUTTONS}]`).insertAdjacentHTML('beforebegin', catModalCardHTML(catData));
+
+      // перемещение кнопки закрытия в начало модального окна
+      const closeButton = $catModalCard.querySelector('.card__button-close');
+      $catModalCard.prepend(closeButton);
+
+      toggleModal($modalDetail);
       // eslint-disable-next-line no-use-before-define
       flushModal($modalDetail);
       return;
@@ -150,6 +186,7 @@ async function detailHandler(card, id) {
 const addEditHandler = (e, id) => {
   const addEditCatForm = $formTemplate.content.cloneNode(true);
   if (e.target.dataset[DATASET.ACTION] === ACTIONS.ADD) {
+    // удалить ненужные теги label, если добавляем кота
     addEditCatForm.querySelectorAll('label').forEach((tag) => {
       if (tag.htmlFor !== 'favorite' && tag.htmlFor !== 'rate') {
         tag.remove();
@@ -157,6 +194,14 @@ const addEditHandler = (e, id) => {
     });
   }
   $modalForm.appendChild(addEditCatForm);
+
+  const $rateSlider = $modalForm.querySelector('#rate');
+  const $rateValue = $modalForm.querySelector('#rateValue');
+  $rateValue.innerHTML = $rateSlider.value;
+
+  $rateSlider.oninput = function changeRateValue() {
+    $rateValue.innerHTML = this.value;
+  };
 
   const $addEditForm = document.forms.addEdit;
 
@@ -214,7 +259,6 @@ const addEditHandler = (e, id) => {
 
 // добавление / редактирование кота (передача формы на бэкэнд)
 function SubmitHandler(submitEvent, id) {
-  // const $addEditForm = document.forms.addEdit;
   const idInput = submitEvent.target.id;
   const nameInput = submitEvent.target.name;
   idInput.disabled = false;
@@ -260,7 +304,11 @@ function SubmitHandler(submitEvent, id) {
       if (editRequest.status === 200) {
         const $catCard = document.querySelector(`[data-id='${id}']`);
         const $place = $catCard.nextElementSibling;
-        $place.insertAdjacentHTML('beforebegin', catCardHTML(copyFormData));
+        if ($place) {
+          $place.insertAdjacentHTML('beforebegin', catCardHTML(copyFormData));
+          return $catCard.remove();
+        }
+        $container.insertAdjacentHTML('beforeend', catCardHTML(copyFormData));
         return $catCard.remove();
       }
       throw Error('Не удалось добавить кота');
@@ -278,13 +326,33 @@ function SubmitHandler(submitEvent, id) {
 
 // обработка кликов на кнопки
 function buttonsHandler(e) {
+  // симуляция клика для модального окна
+  function simulateClick(target) {
+    const cb = target;
+
+    const evt = new MouseEvent('mousedown', {
+      bubbles: true,
+      cancelable: true,
+      view: window,
+    });
+
+    cb.dispatchEvent(evt);
+  }
+
   if (e.target.dataset[DATASET.ACTION]) {
     const $catCard = !e.target.dataset.action.endsWith('add') ? e.target.closest(`[${D_ATTR.CARD}]`) : '';
     const catId = $catCard ? $catCard.dataset[DATASET.ID] : '';
 
     switch (e.target.dataset[DATASET.ACTION]) {
       case ACTIONS.DELETE:
-        deleteHandler($catCard, catId);
+        if (e.target.closest(`[${D_ATTR.MODAL}]`)) {
+          simulateClick($modalDetail);
+          setTimeout(() => {
+            deleteHandler($catCard, catId);
+          }, 300);
+        } else {
+          deleteHandler($catCard, catId);
+        }
         break;
 
       case ACTIONS.DETAIL:
@@ -296,7 +364,14 @@ function buttonsHandler(e) {
         break;
 
       case ACTIONS.EDIT:
-        addEditHandler(e, catId);
+        if (e.target.closest(`[${D_ATTR.MODAL}]`)) {
+          simulateClick($modalDetail);
+          setTimeout(() => {
+            addEditHandler(e, catId);
+          }, 300);
+        } else {
+          addEditHandler(e, catId);
+        }
         break;
     }
   }
@@ -306,35 +381,40 @@ document.addEventListener('click', buttonsHandler);
 
 // сценарии закрытия модальных окон
 function flushModal(modal, id) {
+  const $modalWindow = modal.firstElementChild;
+
   // по нажатию Escape
-  function closeByEsc(e) {
+  async function closeByEsc(e) {
     if (e.key === 'Escape') {
-      modal.replaceChildren();
-      toggleModal(modal);
       // eslint-disable-next-line no-use-before-define
       removeListeners();
+      await setAnimation($modalWindow, ANIMATION_NAME, ANIMATION_DURATION);
+      modal.replaceChildren();
+      toggleModal(modal);
     }
   }
 
   // по клику на затемненную область
-  function closeByClick(e) {
+  async function closeByClick(e) {
     if (e.target.dataset.modal) {
-      e.target.replaceChildren();
-      toggleModal(e.target);
       // eslint-disable-next-line no-use-before-define
       removeListeners();
+      await setAnimation($modalWindow, ANIMATION_NAME, ANIMATION_DURATION);
+      e.target.replaceChildren();
+      toggleModal(e.target);
     }
   }
 
   // при отправке формы
-  function closeBySubmit(e) {
+  async function closeBySubmit(e) {
     if (e.target === document.forms.addEdit) {
       e.preventDefault();
       SubmitHandler(e, id);
-      modal.replaceChildren();
-      toggleModal(modal);
       // eslint-disable-next-line no-use-before-define
       removeListeners();
+      await setAnimation($modalWindow, ANIMATION_NAME, ANIMATION_DURATION);
+      modal.replaceChildren();
+      toggleModal(modal);
     }
   }
 
@@ -345,7 +425,7 @@ function flushModal(modal, id) {
     modal.removeEventListener('submit', closeBySubmit);
   }
 
-  document.removeEventListener('click', buttonsHandler);
+  // document.removeEventListener('click', buttonsHandler);
   document.addEventListener('keydown', closeByEsc);
   modal.addEventListener('mousedown', closeByClick);
   modal.addEventListener('submit', closeBySubmit);
