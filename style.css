@@ -26,11 +26,39 @@ h2 {
 
 /* style Header */
 header {
-  font-size: x-large;
+  font-size: 24px;
+  line-height: 24px;
   padding: 8px;
   background-color: rgba(255, 255, 255, .4);
   box-shadow: 0 12px 34px -11px rgb(38 20 19 / 10%);
   backdrop-filter: blur(2px);
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+header h1 {
+  position: absolute;
+  margin: 0 auto;
+  width: 100%;
+}
+
+header p {
+  font-size: 16px;
+  color: rgba(38, 20, 19, .6);
+  text-shadow: 0 0 0 rgba(38, 20, 19, .4);
+  text-align: end;
+}
+
+header a {
+  text-decoration: none;
+  color: inherit;
+  text-shadow: inherit;
+  transition: all .2s cubic-bezier(.645, .045, .355, 1);
+}
+
+header a:hover {
+  color: rgba(38, 20, 19, .9);
 }
 
 button {
@@ -359,8 +387,15 @@ button {
   border-radius: 16px 16px 0 0;
   border-bottom: 2px solid rgba(38, 20, 19, .4);
   background-color: rgba(229, 118, 34, .5);
+  color: rgba(38, 20, 19, .7);
   backdrop-filter: none;
+  display: initial;
 }
+
+.modal__form h2 {
+  color: rgba(38, 20, 19, .7);
+}
+
 
 .modal__form label {
   margin: 0 0 -8px 8px;

@@ -23,6 +23,7 @@ const ACTIONS = {
   DETAIL: 'detail',
   EDIT: 'edit',
   DELETE: 'delete',
+  CLOSE: 'close',
 };
 const MODAL = {
   FORM: 'form',
@@ -89,10 +90,10 @@ const catModalCardHTML = (cat) => {
 
   return `
     <div class="card__age">
-      Age: ${cat.age}
+      Возраст: ${cat.age}
     </div>
     <div class="card__rate">
-      Rating: ${rate}
+      Рейтинг: ${rate}
     </div>
     <button class="card__button-close">
       <i data-action="close" class="fa-solid fa-xmark"></i>
@@ -217,7 +218,7 @@ const addEditHandler = (e, id) => {
 
   // получение данных для предзаполнения в форму редактирования
   async function getCatData() {
-    $modalForm.querySelector('h2').innerHTML = 'Edit Cat';
+    $modalForm.querySelector('h2').innerHTML = 'Редактировать кота';
     $addEditForm.id.disabled = true;
     $addEditForm.name.disabled = true;
     $addEditForm.submit.id = ACTIONS.EDIT;
@@ -400,8 +401,19 @@ function flushModal(modal, id) {
       // eslint-disable-next-line no-use-before-define
       removeListeners();
       await setAnimation($modalWindow, ANIMATION_NAME, ANIMATION_DURATION);
-      e.target.replaceChildren();
-      toggleModal(e.target);
+      modal.replaceChildren();
+      toggleModal(modal);
+    }
+  }
+
+  // по клику на крестик область
+  async function closeByXmark(e) {
+    if (e.target.dataset[DATASET.ACTION] === ACTIONS.CLOSE) {
+      // eslint-disable-next-line no-use-before-define
+      removeListeners();
+      await setAnimation($modalWindow, ANIMATION_NAME, ANIMATION_DURATION);
+      modal.replaceChildren();
+      toggleModal(modal);
     }
   }
 
@@ -422,11 +434,13 @@ function flushModal(modal, id) {
     document.addEventListener('click', buttonsHandler);
     document.removeEventListener('keydown', closeByEsc);
     modal.removeEventListener('mousedown', closeByClick);
+    modal.removeEventListener('click', closeByXmark);
     modal.removeEventListener('submit', closeBySubmit);
   }
 
   // document.removeEventListener('click', buttonsHandler);
   document.addEventListener('keydown', closeByEsc);
   modal.addEventListener('mousedown', closeByClick);
+  modal.addEventListener('click', closeByXmark);
   modal.addEventListener('submit', closeBySubmit);
 }

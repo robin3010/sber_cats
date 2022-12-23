@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Cats</title>
+  <title>Мои Коты</title>
   <script defer src="./script.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css"
     integrity="sha512-MV7K8+y+gLIBoVD59lQIYicR65iaqukzvf/nwasF0nqhPay5w/9lJmVM2hMDcnK1OnMGCdVK+iQrJ7lzPJQd1w=="
@@ -18,7 +18,9 @@
 
 <body>
   <header>
-    <h1>Cats Project</h1>
+    <h1>Мои коты</h1>
+    <p>сервис предоставлен<br><a href="https://cats.petiteweb.dev/doc/#/" target="_blank">Cats API
+        (cats.petiteweb.dev/)</a></p>
     </div>
   </header>
   <div class="container">
@@ -35,7 +37,7 @@
         <i data-action="close" class="fa-solid fa-xmark"></i>
       </button>
       <header>
-        <h2>Add new Cat</h2>
+        <h2>Добавить кота</h2>
       </header>
       <form name="addEdit">
         <label for="id">ID</label>
@@ -45,47 +47,47 @@
           type="number"
           placeholder="ID"
           required>
-        <label for="name">Name</label>
+        <label for="name">Имя</label>
         <input
           name="name"
           id="name"
           type="text"
-          placeholder="Name"
+          placeholder="Имя"
           pattern=".{3,30}"
           required>
-        <label for="age">Age</label>
+        <label for="age">Возраст</label>
         <input
           name="age"
           id="age"
           type="number"
-          placeholder="Age"
+          placeholder="Возраст"
           max="99">
-        <label for="description">Description</label>
+        <label for="description">Расскажите что-нибудь о коте</label>
         <textarea
           name="description"
           id="description"
           rows="4" cols="21"
-          placeholder="Type some cat description here"
+          placeholder="Расскажите что-нибудь о коте"
           style="resize: none"></textarea>
-        <label for="image">Image URL</label>
+        <label for="image">URL Картинки</label>
         <input
           name="image"
           id="image"
           type="url"
-          placeholder="Image URL">
+          placeholder="URL Картинки">
         <input
           name="rate"
           id="rate"
           type="range"
           min="1" max="10"
           step="1" value="6">
-        <label for="rate">Rating: <span id="rateValue"></span></label>
+        <label for="rate">Рейтинг: <span id="rateValue"></span></label>
         <div class="modal__form-favorite">
           <input
             name="favorite"
             id="favorite"
             type="checkbox">
-          <label for="favorite">Favorite</label>
+          <label for="favorite">Любимый</label>
         </div>
         <button class="form__button-submit"
           type="submit"
