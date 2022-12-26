@@ -196,15 +196,15 @@ const addEditHandler = (e, id) => {
   }
   $modalForm.appendChild(addEditCatForm);
 
-  const $rateSlider = $modalForm.querySelector('#rate');
+  const $addEditForm = document.forms.addEdit;
+
+  // отображение текущего значения слайдера рейтинга
+  const $rateSlider = $addEditForm.rate;
   const $rateValue = $modalForm.querySelector('#rateValue');
-  $rateValue.innerHTML = $rateSlider.value;
 
   $rateSlider.oninput = function changeRateValue() {
     $rateValue.innerHTML = this.value;
   };
-
-  const $addEditForm = document.forms.addEdit;
 
   // получение данных для предзаполнения в форму добавления
   const fillForm = (data) => {
@@ -226,7 +226,9 @@ const addEditHandler = (e, id) => {
     try {
       if (getCatDataByID.status === 200) {
         const catData = await getCatDataByID.json();
-        return fillForm(catData);
+        fillForm(catData);
+        $rateValue.innerHTML = $addEditForm.rate.value;
+        return;
       }
       throw Error(`Не удалось получить данные о коте с id = ${id}`);
     } catch (err) {
@@ -245,6 +247,7 @@ const addEditHandler = (e, id) => {
     if (objFromStoredData) {
       fillForm(objFromStoredData);
     }
+    $rateValue.innerHTML = $rateSlider.value;
 
     $addEditForm.addEventListener('change', () => {
       const getFormData = Object.fromEntries(new FormData($addEditForm).entries());
